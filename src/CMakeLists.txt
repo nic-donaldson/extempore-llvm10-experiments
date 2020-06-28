@@ -8,7 +8,7 @@ find_package(LLVM REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-add_executable(Main main.cpp)
+add_executable(Main main.cpp EXTZONES.cpp EXTClosureAddressTable.cpp)
 
 llvm_map_components_to_libnames(llvm_libs analysis core executionengine instcombine object orcjit runtimedyld scalaropts support native)
 target_link_libraries(Main ${llvm_libs})
