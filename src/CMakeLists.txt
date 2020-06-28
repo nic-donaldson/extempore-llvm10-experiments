@@ -3,7 +3,7 @@ project(extempore_llvm10_experiments)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(LLVM_DIR "../llvm-10.0.0.build/lib/cmake/llvm")
+set(LLVM_DIR "../../llvm-10.0.0.build/lib/cmake/llvm")
 find_package(LLVM REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
