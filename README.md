@@ -1,4 +1,6 @@
-## Licence
+This project uses code from extempore.
+
+## Extempore Licence
 
 Copyright (c) 2011-2020, Andrew Sorensen
 
