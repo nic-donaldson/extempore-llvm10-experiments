@@ -3,6 +3,7 @@
 #include "BranchPrediction.h"
 
 #include <cstring>
+#include <iostream>
 
 THREAD_LOCAL llvm_zone_stack* tls_llvm_zone_stack = 0;
 THREAD_LOCAL uint64_t tls_llvm_zone_stacksize = 0;
@@ -59,6 +60,7 @@ llvm_zone_t* llvm_zone_reset(llvm_zone_t* Zone)
 
 EXPORT void* llvm_zone_malloc(llvm_zone_t* zone, uint64_t size)
 {
+    std::cout << "llvm_zone_malloc" << std::endl;
     static extemp::EXTMutex alloc_mutex("alloc mutex");
     // TODO: is this thread-safe?
     if (!alloc_mutex.initialised()) {
@@ -269,6 +271,28 @@ EXPORT llvm_zone_t* llvm_zone_callback_setup()
     auto zone(llvm_threads_get_callback_zone());
     llvm_push_zone_stack(zone);
     return llvm_zone_reset(zone);
+}
+
+void llvm_zone_mark(llvm_zone_t* zone) {
+    std::cout << "llvm_zone_mark" << std::endl;
+    zone->mark = zone->offset;
+}
+
+// TODO: think about llvm signed/unsigned stuff
+int64_t llvm_zone_mark_size(llvm_zone_t* zone) {
+    std::cout << "llvm_zone_mark_size" << std::endl;
+    return zone->offset - zone->mark;
+}
+
+// TODO: use a native pointer type for portability
+// I just don't remember what it is OTOH
+// this is definitely undefined behaviour in C++ so I can
+// see why you'd want to do it in LLVM IR
+void llvm_zone_ptr_set_size(llvm_zone_t* zone, uint64_t size) {
+    std::cout << "llvm_zone_ptr_set_size" << std::endl;
+    uint64_t* ptr = reinterpret_cast<uint64_t *>(zone);
+    uint64_t* size_ptr = ptr-1;
+    *size_ptr = size;
 }
 
 } // namespace EXTLLVM

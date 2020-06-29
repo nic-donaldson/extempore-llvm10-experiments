@@ -6,5 +6,6 @@ pkgs.mkShell {
     pkgs.gcc
     pkgs.cmake
     pkgs.ccls
+    pkgs.gdb
   ];
 }

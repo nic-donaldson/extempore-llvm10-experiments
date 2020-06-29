@@ -71,6 +71,10 @@ EXPORT void llvm_push_zone_stack_extern(llvm_zone_t* Zone);
 EXPORT llvm_zone_t* llvm_zone_create_extern(uint64_t Size);
 
 EXPORT llvm_zone_t* llvm_zone_callback_setup();
+
+void llvm_zone_mark(llvm_zone_t* zone);
+int64_t llvm_zone_mark_size(llvm_zone_t* zone);
+void llvm_zone_ptr_set_size(llvm_zone_t* zone, uint64_t size);
  
 }
 }

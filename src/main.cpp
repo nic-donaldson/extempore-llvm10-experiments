@@ -17,6 +17,7 @@
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 
 #include "EXTZONES.h"
+#include "EXTClosureAddressTable.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -78,6 +79,10 @@ static struct LLVMStuff {
 } G;
 
 int main() {
+  InitializeNativeTarget();
+  InitializeNativeTargetAsmPrinter();
+  InitializeNativeTargetAsmParser();
+  G.init();
   // read in all our IR:
   {
     SMDiagnostic diag;
@@ -98,15 +103,42 @@ int main() {
     assert(!G.crystallize());
   }
 
-  // add llvm_zone_malloc to the main symbol table
+  // add syms to the main symbol table
   {
     const DataLayout& DL = G.TheJIT->getDataLayout();
     MangleAndInterner Mangle(G.TheJIT->getExecutionSession(), DL);
 
-    auto syms =
-        absoluteSymbols({{Mangle("llvm_zone_malloc"),
-                          JITEvaluatedSymbol(pointerToJITTargetAddress(&extemp::EXTZONES::llvm_zone_malloc), {})}});
-    cantFail(G.TheJIT->getMainJITDylib().define(syms), "defining llvm_zone_malloc");
+    auto syms = absoluteSymbols(
+        {{Mangle("llvm_zone_malloc"),
+          JITEvaluatedSymbol(
+              pointerToJITTargetAddress(&extemp::EXTZONES::llvm_zone_malloc),
+              {})},
+         {Mangle("llvm_zone_mark"),
+          JITEvaluatedSymbol(
+              pointerToJITTargetAddress(&extemp::EXTZONES::llvm_zone_mark),
+              {})},
+         {Mangle("new_address_table"),
+          JITEvaluatedSymbol(
+              pointerToJITTargetAddress(
+                  &extemp::ClosureAddressTable::new_address_table),
+              {})},
+         {Mangle("add_address_table"),
+          JITEvaluatedSymbol(
+              pointerToJITTargetAddress(
+                  &extemp::ClosureAddressTable::add_address_table),
+              {})},
+         {Mangle("llvm_zone_mark_size"),
+          JITEvaluatedSymbol(
+              pointerToJITTargetAddress(&extemp::EXTZONES::llvm_zone_mark_size),
+              {})},
+         {Mangle("llvm_zone_ptr_set_size"),
+          JITEvaluatedSymbol(pointerToJITTargetAddress(
+                                 &extemp::EXTZONES::llvm_zone_ptr_set_size),
+                             {})}
+	});
+
+    cantFail(G.TheJIT->getMainJITDylib().define(syms),
+             "defining llvm_zone_malloc");
   }
 
   {
@@ -119,6 +151,7 @@ int main() {
   {
     SMDiagnostic diag;
     G.TheModule = std::move(parseIRFile("ir/five.ll", diag, *G.TheContext));
+    diag.print("five.ll", errs());
     G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
     assert(!G.crystallize());
   }
@@ -127,16 +160,11 @@ int main() {
   {
     auto sym = cantFail(G.TheJIT->lookup("add1_adhoc_W2k2NCxpNjRd_maker"), "lookup add1_adhoc_X_maker");
     void (*f)(llvm_zone_t*) = (void (*)(llvm_zone_t*))sym.getAddress();
-    f(static_cast<llvm_zone_t*>(nullptr));
+    llvm_zone_t* z = extemp::EXTZONES::llvm_zone_create(50 * 1024 * 1024);
+    f(z);
   }
-
-  // fprintf(stderr, "ready> ");
-  // getNextToken();
-
-  // MainLoop();
 
   G.TheJIT->getExecutionSession().dump(errs());
   
-  std::cout << "Hello, world!" << std::endl;
   return 0;
 }
