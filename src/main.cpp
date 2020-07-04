@@ -18,6 +18,7 @@
 
 #include "EXTZONES.h"
 #include "EXTClosureAddressTable.h"
+#include "EXTLLVM.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -134,6 +135,27 @@ int main() {
          {Mangle("llvm_zone_ptr_set_size"),
           JITEvaluatedSymbol(pointerToJITTargetAddress(
                                  &extemp::EXTZONES::llvm_zone_ptr_set_size),
+                             {})},
+         {Mangle("llvm_destroy_zone_after_delay"),
+          JITEvaluatedSymbol(
+              pointerToJITTargetAddress(
+                  &extemp::EXTLLVM::llvm_destroy_zone_after_delay),
+              {})},
+         {Mangle("llvm_peek_zone_stack"),
+          JITEvaluatedSymbol(pointerToJITTargetAddress(
+                                 &extemp::EXTZONES::llvm_peek_zone_stack),
+                             {})},
+         {Mangle("llvm_pop_zone_stack"),
+          JITEvaluatedSymbol(pointerToJITTargetAddress(
+                                 &extemp::EXTZONES::llvm_pop_zone_stack),
+                             {})},
+         {Mangle("llvm_push_zone_stack"),
+          JITEvaluatedSymbol(pointerToJITTargetAddress(
+                                 &extemp::EXTZONES::llvm_push_zone_stack),
+                             {})},
+         {Mangle("llvm_zone_destroy"),
+          JITEvaluatedSymbol(pointerToJITTargetAddress(
+                                 &extemp::EXTZONES::llvm_zone_destroy),
                              {})}
 	});
 
@@ -157,6 +179,35 @@ int main() {
   }
 
   // try run add1_adhoc_W2k2NCxpNjRd_maker(void* something_idk)
+  {
+    auto sym = cantFail(G.TheJIT->lookup("add1_adhoc_W2k2NCxpNjRd_maker"), "lookup add1_adhoc_X_maker");
+    void (*f)(llvm_zone_t*) = (void (*)(llvm_zone_t*))sym.getAddress();
+    llvm_zone_t* z = extemp::EXTZONES::llvm_zone_create(50 * 1024 * 1024);
+    f(z);
+  }
+
+  {
+    SMDiagnostic diag;
+    G.TheModule = std::move(parseIRFile("ir/six.ll", diag, *G.TheContext));
+    diag.print("six.ll", errs());
+    G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
+    assert(!G.crystallize());
+  }
+
+  {
+    auto& main = G.TheJIT->getMainJITDylib();
+    auto& ES = G.TheJIT->getExecutionSession();
+    cantFail(main.remove({ES.intern("add1_adhoc_W2k2NCxpNjRd_maker"), ES.intern("add1_adhoc_W2k2NCxpNjRd_setter")}), "removing _maker and _setter");
+  }
+
+  {
+    SMDiagnostic diag;
+    G.TheModule = std::move(parseIRFile("ir/seven.ll", diag, *G.TheContext));
+    diag.print("seven.ll", errs());
+    G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
+    assert(!G.crystallize());
+  }
+
   {
     auto sym = cantFail(G.TheJIT->lookup("add1_adhoc_W2k2NCxpNjRd_maker"), "lookup add1_adhoc_X_maker");
     void (*f)(llvm_zone_t*) = (void (*)(llvm_zone_t*))sym.getAddress();
