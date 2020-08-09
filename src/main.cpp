@@ -207,9 +207,10 @@ int main() {
   }
 
   {
+    MangleAndInterner Mangle(G.TheJIT->getExecutionSession(), G.TheJIT->getDataLayout());
     auto& main = G.TheJIT->getMainJITDylib();
     auto& ES = G.TheJIT->getExecutionSession();
-    cantFail(main.remove({ES.intern("add1_adhoc_W2k2NCxpNjRd_maker"), ES.intern("add1_adhoc_W2k2NCxpNjRd_setter")}), "removing _maker and _setter");
+    cantFail(main.remove({Mangle("add1_adhoc_W2k2NCxpNjRd_maker"), Mangle("add1_adhoc_W2k2NCxpNjRd_setter")}), "removing _maker and _setter");
     G.dump();
   }
 
