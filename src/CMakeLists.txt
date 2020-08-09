@@ -3,12 +3,12 @@ project(extempore_llvm10_experiments)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(LLVM_DIR "../../llvm-10.0.0.build/lib/cmake/llvm")
 find_package(LLVM REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 add_executable(Main main.cpp EXTZONES.cpp EXTClosureAddressTable.cpp EXTLLVM.cpp)
+set_property(TARGET Main PROPERTY CXX_STANDARD 17)
 
 llvm_map_components_to_libnames(llvm_libs analysis core executionengine instcombine object orcjit runtimedyld scalaropts support native)
 target_link_libraries(Main ${llvm_libs})

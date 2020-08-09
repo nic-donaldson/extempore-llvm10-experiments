@@ -71,6 +71,10 @@ static struct LLVMStuff {
     return static_cast<bool>(Err);
   }
 
+  void dump() {
+    TheJIT->getExecutionSession().dump(errs());
+  }
+
   std::unique_ptr<LLJIT> TheJIT;
   std::unique_ptr<LLVMContext> TheContext;
   std::unique_ptr<Module> TheModule;
@@ -90,18 +94,21 @@ int main() {
     G.TheModule = std::move(parseIRFile("ir/one.ll", diag, *G.TheContext));
     G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
     assert(!G.crystallize());
+    G.dump();
   }
   {
     SMDiagnostic diag;
     G.TheModule = std::move(parseIRFile("ir/two.ll", diag, *G.TheContext));
     G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
     assert(!G.crystallize());
+    G.dump();
   }
   {
     SMDiagnostic diag;
     G.TheModule = std::move(parseIRFile("ir/three.ll", diag, *G.TheContext));
     G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
     assert(!G.crystallize());
+    G.dump();
   }
 
   // add syms to the main symbol table
@@ -161,6 +168,8 @@ int main() {
 
     cantFail(G.TheJIT->getMainJITDylib().define(syms),
              "defining llvm_zone_malloc");
+
+    G.dump();
   }
 
   {
@@ -168,6 +177,7 @@ int main() {
     G.TheModule = std::move(parseIRFile("ir/four.ll", diag, *G.TheContext));
     G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
     assert(!G.crystallize());
+    G.dump();
   }
 
   {
@@ -176,6 +186,7 @@ int main() {
     diag.print("five.ll", errs());
     G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
     assert(!G.crystallize());
+    G.dump();
   }
 
   // try run add1_adhoc_W2k2NCxpNjRd_maker(void* something_idk)
@@ -192,12 +203,14 @@ int main() {
     diag.print("six.ll", errs());
     G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
     assert(!G.crystallize());
+    G.dump();
   }
 
   {
     auto& main = G.TheJIT->getMainJITDylib();
     auto& ES = G.TheJIT->getExecutionSession();
     cantFail(main.remove({ES.intern("add1_adhoc_W2k2NCxpNjRd_maker"), ES.intern("add1_adhoc_W2k2NCxpNjRd_setter")}), "removing _maker and _setter");
+    G.dump();
   }
 
   {
@@ -206,6 +219,7 @@ int main() {
     diag.print("seven.ll", errs());
     G.TheModule->setDataLayout(G.TheJIT->getDataLayout());
     assert(!G.crystallize());
+    G.dump();
   }
 
   {
@@ -215,7 +229,7 @@ int main() {
     f(z);
   }
 
-  G.TheJIT->getExecutionSession().dump(errs());
+  G.dump();
   
   return 0;
 }
